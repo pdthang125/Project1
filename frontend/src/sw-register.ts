@@ -1,0 +1,1 @@
+export async function registerServiceWorker() { return 'serviceWorker' in navigator ? navigator.serviceWorker.register('/sw.js') : null; }

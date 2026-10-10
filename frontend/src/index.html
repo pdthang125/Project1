@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0284c7">
+  <meta name="description" content="Ứng dụng kiểm tra cơ sở vật chất khuôn viên VKU — hoạt động ngoại tuyến hoàn toàn">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="VKU Survey">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="/style.css">
+  <title>VKU Field Survey — Kiểm tra cơ sở vật chất</title>
+</head>
+<body>
+
+<!-- Toast container -->
+<div id="toast-container" role="status" aria-live="polite"></div>
+
+<!-- Hidden camera input (web fallback) -->
+<input id="camera-input" type="file" accept="image/*" capture="environment" hidden>
+
+<main class="shell">
+
+  <!-- ── Top Bar ── -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="topbar-logo" aria-hidden="true">📋</div>
+      <div>
+        <p class="eyebrow">VKU · Campus Ops</p>
+        <h1>Field Survey</h1>
+      </div>
+    </div>
+    <div id="network-pill" class="network-pill online" aria-live="polite">
+      <span class="network-dot"></span>
+      <span id="network-label">Trực tuyến</span>
+    </div>
+  </header>
+
+  <!-- ── PWA Install Banner ── -->
+  <div id="install-banner" class="hidden" role="complementary" aria-label="Cài đặt ứng dụng">
+    <span style="font-size:28px">📲</span>
+    <div class="install-text">
+      <strong>Cài đặt ứng dụng</strong>
+      Thêm vào màn hình chính để dùng ngoại tuyến
+    </div>
+    <button class="install-btn" id="install-btn">Cài đặt</button>
+    <button class="install-dismiss" id="install-dismiss" aria-label="Đóng">×</button>
+  </div>
+
+  <!-- ── Intro & Progress ── -->
+  <section class="intro">
+    <div>
+      <p class="kicker">Biểu mẫu kiểm tra</p>
+      <h2>Ghi nhận thực trạng thiết bị tại chỗ.</h2>
+      <p class="muted">Dữ liệu lưu cục bộ ngay lập tức. Đồng bộ tự động khi có kết nối.</p>
+    </div>
+    <div class="progress-wrapper">
+      <span class="progress-label" id="progress-label">BƯỚC 1/4</span>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill" style="width:25%"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Survey Form ── -->
+  <form id="survey-form" novalidate>
+
+    <!-- Step 1: Location -->
+    <section class="step active" data-step="1">
+      <p class="step-number">01 / VỊ TRÍ</p>
+      <h2>Thiết bị đặt ở đâu?</h2>
+      <div class="fields">
+        <label class="field-label">
+          <span>Tòa nhà</span>
+          <input id="f-building" name="building" required placeholder="VD: A, B, C..." autocomplete="off" inputmode="text">
+        </label>
+        <label class="field-label">
+          <span>Tầng</span>
+          <input id="f-floor" name="floor" type="number" min="0" step="1" required placeholder="VD: 2" inputmode="numeric">
+        </label>
+        <label class="field-label wide">
+          <span>Số phòng</span>
+          <input id="f-room" name="room" required placeholder="VD: 201, B3-04..." autocomplete="off">
+        </label>
+      </div>
+    </section>
+
+    <!-- Step 2: Category -->
+    <section class="step" data-step="2">
+      <p class="step-number">02 / PHÂN LOẠI</p>
+      <h2>Bạn đang kiểm tra gì?</h2>
+      <div class="fields">
+        <label class="field-label wide">
+          <span>Danh mục thiết bị</span>
+          <select id="f-category" name="category" required>
+            <option value="">— Chọn danh mục —</option>
+            <option value="Hardware">🖥️ Phần cứng (Hardware)</option>
+            <option value="Projector">📽️ Máy chiếu (Projector)</option>
+            <option value="AC">❄️ Điều hòa (AC)</option>
+            <option value="Electrical">⚡ Điện (Electrical)</option>
+            <option value="Furniture">🪑 Nội thất (Furniture)</option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <!-- Step 3: Condition -->
+    <section class="step" data-step="3">
+      <p class="step-number">03 / TÌNH TRẠNG</p>
+      <h2>Thiết bị có tình trạng như thế nào?</h2>
+      <div class="stars-section">
+        <span class="stars-legend">Đánh giá tình trạng</span>
+        <div class="stars" id="stars-container" role="radiogroup" aria-label="Đánh giá từ 1 đến 5 sao">
+          <button type="button" class="star-btn" data-value="1" aria-label="1 sao">★</button>
+          <button type="button" class="star-btn" data-value="2" aria-label="2 sao">★</button>
+          <button type="button" class="star-btn" data-value="3" aria-label="3 sao">★</button>
+          <button type="button" class="star-btn" data-value="4" aria-label="4 sao">★</button>
+          <button type="button" class="star-btn" data-value="5" aria-label="5 sao">★</button>
+        </div>
+        <p class="stars-label" id="stars-label">Chưa chọn đánh giá</p>
+        <input type="hidden" id="f-rating" name="rating" value="">
+      </div>
+      <div class="fields">
+        <label class="field-label wide">
+          <span>Ghi chú lỗi / hư hỏng</span>
+          <textarea id="f-notes" name="notes" rows="4" placeholder="Mô tả chi tiết hư hỏng, lỗi hoặc cần bảo trì..."></textarea>
+        </label>
+      </div>
+    </section>
+
+    <!-- Step 4: Evidence -->
+    <section class="step" data-step="4">
+      <p class="step-number">04 / BẰNG CHỨNG</p>
+      <h2>Thêm ảnh bằng chứng thực tế.</h2>
+      <div class="photo-area">
+        <button type="button" class="photo-btn" id="photo-btn">
+          <span class="photo-btn-icon">📷</span>
+          Chụp ảnh / Chọn từ thư viện
+        </button>
+        <div class="photo-preview" id="photo-preview">
+          <img id="photo-img" src="" alt="Ảnh bằng chứng kiểm tra">
+          <button type="button" class="photo-remove" id="photo-remove" aria-label="Xóa ảnh">✕</button>
+        </div>
+        <p class="location-status" id="location-status">
+          📍 Tọa độ GPS sẽ được ghi lại khi nộp biểu mẫu.
+        </p>
+      </div>
+    </section>
+
+    <footer class="form-actions">
+      <button type="button" class="btn-back" id="back-btn" disabled>← Quay lại</button>
+      <span class="draft-status" id="draft-status">Sẵn sàng</span>
+      <button type="button" class="btn-next" id="next-btn">
+        Tiếp theo <span>→</span>
+      </button>
+    </footer>
+
+  </form>
+
+  <!-- ── Sync Queue ── -->
+  <section class="queue-section">
+    <div class="queue-header">
+      <div class="queue-title-group">
+        <p class="kicker">Hàng đợi đồng bộ</p>
+        <h2>Dữ liệu đã nộp</h2>
+      </div>
+      <span class="queue-count" id="queue-count">0 bản ghi</span>
+    </div>
+    <div id="queue-list">
+      <div class="queue-empty">
+        <span class="queue-empty-icon">📭</span>
+        Chưa có biểu mẫu nào được nộp.<br>
+        <span style="font-size:12px;opacity:.6">Điền biểu mẫu phía trên để bắt đầu.</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ── View Record Modal ── -->
+<div class="modal-overlay" id="view-modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" tabindex="-1">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modal-title">Chi tiết bản ghi</h2>
+      <button type="button" class="modal-close" id="view-modal-close" aria-label="Đóng">&times;</button>
+    </div>
+    <div class="modal-body" id="view-modal-body">
+      <!-- Content injected by JavaScript -->
+    </div>
+  </div>
+</div>
+
+<script type="module" src="main.ts"></script>
+</body>
+</html>
